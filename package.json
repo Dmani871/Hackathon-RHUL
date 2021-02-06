@@ -2,8 +2,9 @@
   "name": "hackathon-rhul",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,6 +20,7 @@
   "dependencies": {
     "express": "^4.17.1",
     "http": "0.0.1-security",
-    "ws": "^7.4.3"
+    "ws": "^7.4.3",
+    "nodemon": "^2.0.7"
   }
 }
