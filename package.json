@@ -15,5 +15,10 @@
   "bugs": {
     "url": "https://github.com/Dmani871/Hackathon-RHUL/issues"
   },
-  "homepage": "https://github.com/Dmani871/Hackathon-RHUL#readme"
+  "homepage": "https://github.com/Dmani871/Hackathon-RHUL#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "http": "0.0.1-security",
+    "ws": "^7.4.3"
+  }
 }
