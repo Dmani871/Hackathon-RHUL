@@ -17,21 +17,101 @@ server.listen(port, function () {
 
 let clientCount = 0;
 
-let mapDimension = 10;
+let mapDimension = 15;
 
 let map = Array(mapDimension)
   .fill()
   .map(() => Array(mapDimension).fill(0));
 
-console.log(map);
+let clients = []; // {clientID, positions: []};
+
+const speed = 50;
+
+setInterval(moveClients, speed);
 
 wsServer.on("connection", (client) => {
-  clientCount++;
-  console.log("Hello world");
 
-  client.send(JSON.stringify({ dimension: 10 }));
+	//Generates values for the new player
+	clientCount++;
+	client.id = clientCount;
 
-  client.on("message", (message) => {});
+	let x = Math.floor(Math.random() * (mapDimension - 3));
+	let y = Math.floor(Math.random() * (mapDimension - 3));
+  //for (i i)
+	//directions: 0 -> right, 1 -> up, 2 -> left, 3 -> down
+	let clientJSON = {clientID: clientCount, direction: 0, positions: [{x: x, y: y},{x: x+1, y: y},{x: x+2, y: y}]};
+	clients.push(clientJSON);
 
-  client.on("close", () => {});
+	sendPlayerInfo();
+
+	client.on("message", (message) => {
+
+		let messageJSON = JSON.parse(message);
+
+		for (let c of clients) {
+			if (c.clientID == client.id) {
+				c.direction = messageJSON.direction;
+			}
+		}
+
+	});
+
+	client.on("close", () => {
+
+		//This removes the clients that just disconnected from client array
+		for (let c of clients) {
+			if (c.clientID == client.id) clients.splice(clients.indexOf(c), 1);
+		}
+
+		//Send updated player list;
+		sendPlayerInfo();
+
+	});
+
 });
+
+function sendPlayerInfo() {
+
+	for (let c of wsServer.clients) {
+
+		let self;
+		let players = [];
+
+		for (let arrayClients of clients) {
+			if (arrayClients.clientID == c.id) {
+				self = arrayClients;
+			} else {
+				players.push(arrayClients);
+			}
+		}
+
+		c.send(JSON.stringify({dimension: mapDimension, self: self, players: players}));
+
+	}
+
+}
+
+function moveClients() {
+
+	for (let c of clients) {
+
+		for (let i = 0; i < c.positions.length - 1; i++) {
+			c.positions[i].x = c.positions[i + 1].x;
+			c.positions[i].y = c.positions[i + 1].y;
+		}
+	
+		if (c.direction == 0) {
+			c.positions[c.positions.length - 1].x++;
+		} else if (c.direction == 1) {
+			c.positions[c.positions.length - 1].y--;
+		} else if (c.direction == 2) {
+			c.positions[c.positions.length - 1].x--;
+		} else {
+			c.positions[c.positions.length - 1].y++;
+		}
+
+	}
+
+	sendPlayerInfo();
+
+}
