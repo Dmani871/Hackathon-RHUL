@@ -17,15 +17,16 @@ server.listen(port, function () {
 
 let clientCount = 0;
 
-let mapDimension = 15;
+let mapX = 100;
+let mapY = 50;
 
-let map = Array(mapDimension)
+let map = Array(mapY)
   .fill()
-  .map(() => Array(mapDimension).fill(0));
+  .map(() => Array(mapX).fill(0));
 
 let clients = []; // {clientID, positions: []};
 
-const speed = 50;
+const speed = 75;
 
 setInterval(moveClients, speed);
 
@@ -35,11 +36,17 @@ wsServer.on("connection", (client) => {
 	clientCount++;
 	client.id = clientCount;
 
-	let x = Math.floor(Math.random() * (mapDimension - 3));
-	let y = Math.floor(Math.random() * (mapDimension - 3));
-  //for (i i)
+	let x = Math.floor(Math.random() * (mapX - 10));
+	let y = Math.floor(Math.random() * (mapY - 10));
+
 	//directions: 0 -> right, 1 -> up, 2 -> left, 3 -> down
-	let clientJSON = {clientID: clientCount, direction: 0, positions: [{x: x, y: y},{x: x+1, y: y},{x: x+2, y: y}]};
+
+	let positions = [];
+	for (let i = 0; i < 10; i++) {
+		positions.push({x: x + i, y: y});
+	}
+
+	let clientJSON = {clientID: clientCount, direction: 0, positions: positions};
 	clients.push(clientJSON);
 
 	sendPlayerInfo();
@@ -50,6 +57,7 @@ wsServer.on("connection", (client) => {
 
 		for (let c of clients) {
 			if (c.clientID == client.id) {
+				
 				c.direction = messageJSON.direction;
 			}
 		}
@@ -85,7 +93,7 @@ function sendPlayerInfo() {
 			}
 		}
 
-		c.send(JSON.stringify({dimension: mapDimension, self: self, players: players}));
+		c.send(JSON.stringify({dimensionX: mapX, dimensionY: mapY, self: self, players: players}));
 
 	}
 
@@ -99,7 +107,7 @@ function moveClients() {
 			c.positions[i].x = c.positions[i + 1].x;
 			c.positions[i].y = c.positions[i + 1].y;
 		}
-	
+
 		if (c.direction == 0) {
 			c.positions[c.positions.length - 1].x++;
 		} else if (c.direction == 1) {
