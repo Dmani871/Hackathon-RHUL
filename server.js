@@ -28,7 +28,11 @@ let clients = []; // {clientID, positions: []};
 
 const speed = 75;
 
-setInterval(moveClients, speed);
+let timeToStart = 10;
+let countdown = false;
+
+let gameloop;
+let addPositionLoop;
 
 wsServer.on("connection", (client) => {
 
@@ -36,17 +40,32 @@ wsServer.on("connection", (client) => {
 	clientCount++;
 	client.id = clientCount;
 
-	let x = Math.floor(Math.random() * (mapX - 10));
-	let y = Math.floor(Math.random() * (mapY - 10));
+	if (clientCount >= 2 && countdown == false) {
+		countdown = true;
+		let startingTimeout = setInterval(() => {
+			console.log("Time to start: " + timeToStart);
+			sendPlayerInfo();
+			timeToStart--;
+
+			if (timeToStart <= 0) {
+				clearTimeout(startingTimeout);
+				gameloop = setInterval(moveClients, speed);
+			}
+
+		}, 1000);
+	}
+
+	let x = Math.floor(Math.random() * (mapX - 20));
+	let y = Math.floor(Math.random() * (mapY - 20));
 
 	//directions: 0 -> right, 1 -> up, 2 -> left, 3 -> down
 
 	let positions = [];
-	for (let i = 0; i < 10; i++) {
+	for (let i = 0; i < 15; i++) {
 		positions.push({x: x + i, y: y});
 	}
 
-	let clientJSON = {clientID: clientCount, direction: 0, positions: positions};
+	let clientJSON = {clientID: clientCount, direction: 0, alive: true, timeToStart: timeToStart, positions: positions};
 	clients.push(clientJSON);
 
 	sendPlayerInfo();
@@ -78,6 +97,29 @@ wsServer.on("connection", (client) => {
 
 });
 
+function collision() {
+	for (let c1 of clients) {
+		let head = c1.positions[c1.positions.length - 1];
+		for (let c2 of clients) {
+			if (c1 != c2) {
+				for (let i = 0; i < c2.positions.length - 1; i++) {
+					try {
+						if (head.x==c2.positions[i].x && head.y==c2.positions[i].y){
+							console.log("hello");
+							c1.alive = false;
+							c1.positions = [];
+						}
+					} catch (error) {}
+				}
+				
+			}
+
+		}
+
+	}
+}
+
+
 function sendPlayerInfo() {
 
 	for (let c of wsServer.clients) {
@@ -93,7 +135,7 @@ function sendPlayerInfo() {
 			}
 		}
 
-		c.send(JSON.stringify({dimensionX: mapX, dimensionY: mapY, self: self, players: players}));
+		c.send(JSON.stringify({dimensionX: mapX, dimensionY: mapY, timeToStart: timeToStart, self: self, players: players}));
 
 	}
 
@@ -101,23 +143,59 @@ function sendPlayerInfo() {
 
 function moveClients() {
 
+	let clientAliveCount = 0;
+	
 	for (let c of clients) {
 
-		for (let i = 0; i < c.positions.length - 1; i++) {
-			c.positions[i].x = c.positions[i + 1].x;
-			c.positions[i].y = c.positions[i + 1].y;
+		if (c.alive) {
+
+			clientAliveCount++;
+
+			for (let i = 0; i < c.positions.length - 1; i++) {
+				c.positions[i].x = c.positions[i + 1].x;
+				c.positions[i].y = c.positions[i + 1].y;
+			}
+
+			if (c.direction == 0) {
+				c.positions[c.positions.length - 1].x++;
+			} else if (c.direction == 1) {
+				c.positions[c.positions.length - 1].y--;
+			} else if (c.direction == 2) {
+				c.positions[c.positions.length - 1].x--;
+			} else {
+				c.positions[c.positions.length - 1].y++;
+			}
+
+			if (c.positions[c.positions.length - 1].x < 0) {
+				c.alive = false;
+				c.positions = [];
+			} else if (c.positions[c.positions.length - 1].x >= mapX) {
+				c.alive = false;
+				c.positions = [];
+			} else if (c.positions[c.positions.length - 1].y < 0) {
+				c.alive = false;
+				c.positions = [];
+			} else if (c.positions[c.positions.length - 1].y >= mapY) {
+				c.alive = false;
+				c.positions = [];
+			}
+
 		}
 
-		if (c.direction == 0) {
-			c.positions[c.positions.length - 1].x++;
-		} else if (c.direction == 1) {
-			c.positions[c.positions.length - 1].y--;
-		} else if (c.direction == 2) {
-			c.positions[c.positions.length - 1].x--;
-		} else {
-			c.positions[c.positions.length - 1].y++;
-		}
+	}
 
+	if (clientAliveCount <= 1) {
+		clearTimeout(gameloop);
+		clients = [];
+		console.log("Game is over");
+	
+		countdown = false;
+		clientCount = 0;
+		timeToStart = 10;
+
+		for (let c of wsServer.clients) c.close();
+	} else {
+		collision();
 	}
 
 	sendPlayerInfo();

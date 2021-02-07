@@ -4,6 +4,8 @@ let map;
 let w = 0;
 let h = 0;
 
+let GAME_OVER = false;
+
 document.onkeydown = checkKey;
 
 var background = new Image();
@@ -30,7 +32,12 @@ function onload() {
 
   connection.addEventListener("error", () => alert("An error occurred!"));
 
-  connection.addEventListener("close", () => console.log("The WebSocket was closed!"));
+  connection.addEventListener("close", () => {
+    
+    console.log("Game is over");
+    GAME_OVER = true;
+
+  });
   fixSize();
 
 }
@@ -48,33 +55,12 @@ function draw() {
   context.fillStyle = "#000000";
   context.fillRect(0, 0, w, h);
 
-  /*let backgroundPattern = context.createPattern(background, 'repeat');
-  context.fillStyle = backgroundPattern;
-  context.fillRect(0, 0, w, h);*/
-  /*
-
-  for (var i= 0; i<100; i++) {
-    ctx.beginPath();
-    ctx.moveTo(c.width*Math.random(),c.height*Math.random());
-    ctx.lineTo(c.width*Math.random(),c.height*Math.random());
-    ctx.strokeStyle= "rgb(" +
-    Math.round(256*Math.random()) + "," + 
-    Math.round(256*Math.random()) + "," + 
-    Math.round(256*Math.random()) + ")";
-    ctx.stroke();
+  if (GAME_OVER) {
+    context.fillStyle = '#008800';
+    context.font = "54px Arial";
+    context.fillText("We have a winner", w/2 - 200, h/2 - 100);
+    context.fillText("Refresh to play again", w/2 - 200, h/2);
   }
-  */
-  /*context.fillStyle = "#009900";
-  for (let i = 0; i < map.dimension; i++) {
-    for (let j = 0; j < map.dimension; j++) {
-      context.fillRect(
-        i * squareSize + 5,
-        j * squareSize + 5,
-        squareSize - 5,
-        squareSize - 5
-      );
-    }
-  }*/
 
   const squareSizeX = w /  map.dimensionX;
   const squareSizeY = h / map.dimensionY;
@@ -95,26 +81,14 @@ function draw() {
 	  }
 
   }
-
-  //checkCollision();
-  window.requestAnimationFrame(draw);
-
-}
-
-function checkCollision() {
-
-  let x = map.self.positions[map.self.positions.length - 1].x;
-  let y = map.self.positions[map.self.positions.length - 1].y;
-
-  if (x < 0) {
-    connection.send(JSON.stringify({direction: 1}));
-  } else if (x >= map.dimension - 1) {
-    connection.send(JSON.stringify({direction: 3}));
-  } else if (y < 0) {
-    connection.send(JSON.stringify({direction: 0}));
-  } else if (y >= map.dimension - 1) {
-    connection.send(JSON.stringify({direction: 2}));
+  
+  if (map.timeToStart > 0) {
+    context.fillStyle = '#008800';
+    context.font = "54px Arial";
+    context.fillText(map.timeToStart, w/2, h/2);
   }
+
+  window.requestAnimationFrame(draw);
 
 }
 
