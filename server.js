@@ -32,7 +32,9 @@ let timeToStart = 10;
 let countdown = false;
 
 let gameloop;
-let addPositionLoop;
+let zoneloop;
+
+let zone = 0;
 
 wsServer.on("connection", (client) => {
 
@@ -50,6 +52,7 @@ wsServer.on("connection", (client) => {
 			if (timeToStart <= 0) {
 				clearTimeout(startingTimeout);
 				gameloop = setInterval(moveClients, speed);
+				zoneloop = setInterval(addZone, 5000);
 			}
 
 		}, 1000);
@@ -57,6 +60,7 @@ wsServer.on("connection", (client) => {
 
 	let x = Math.floor(Math.random() * (mapX - 20));
 	let y = Math.floor(Math.random() * (mapY - 20));
+	let colour = "#" + Math.floor(Math.random()*16777215).toString(16);
 
 	//directions: 0 -> right, 1 -> up, 2 -> left, 3 -> down
 
@@ -65,7 +69,7 @@ wsServer.on("connection", (client) => {
 		positions.push({x: x + i, y: y});
 	}
 
-	let clientJSON = {clientID: clientCount, direction: 0, alive: true, timeToStart: timeToStart, positions: positions};
+	let clientJSON = {clientID: clientCount, direction: 0, alive: true, zone: zone, timeToStart: timeToStart, colour: colour, positions: positions};
 	clients.push(clientJSON);
 
 	sendPlayerInfo();
@@ -135,7 +139,7 @@ function sendPlayerInfo() {
 			}
 		}
 
-		c.send(JSON.stringify({dimensionX: mapX, dimensionY: mapY, timeToStart: timeToStart, self: self, players: players}));
+		c.send(JSON.stringify({dimensionX: mapX, dimensionY: mapY, timeToStart: timeToStart, zone: zone, self: self, players: players}));
 
 	}
 
@@ -166,16 +170,16 @@ function moveClients() {
 				c.positions[c.positions.length - 1].y++;
 			}
 
-			if (c.positions[c.positions.length - 1].x < 0) {
+			if (c.positions[c.positions.length - 1].x < zone) {
 				c.alive = false;
 				c.positions = [];
-			} else if (c.positions[c.positions.length - 1].x >= mapX) {
+			} else if (c.positions[c.positions.length - 1].x >= mapX - zone) {
 				c.alive = false;
 				c.positions = [];
-			} else if (c.positions[c.positions.length - 1].y < 0) {
+			} else if (c.positions[c.positions.length - 1].y < zone) {
 				c.alive = false;
 				c.positions = [];
-			} else if (c.positions[c.positions.length - 1].y >= mapY) {
+			} else if (c.positions[c.positions.length - 1].y >= mapY - zone) {
 				c.alive = false;
 				c.positions = [];
 			}
@@ -186,12 +190,14 @@ function moveClients() {
 
 	if (clientAliveCount <= 1) {
 		clearTimeout(gameloop);
+		clearTimeout(zoneloop);
 		clients = [];
 		console.log("Game is over");
 	
 		countdown = false;
 		clientCount = 0;
 		timeToStart = 10;
+		zone = 0;
 
 		for (let c of wsServer.clients) c.close();
 	} else {
@@ -200,4 +206,8 @@ function moveClients() {
 
 	sendPlayerInfo();
 
+}
+
+function addZone() {
+	zone++;
 }

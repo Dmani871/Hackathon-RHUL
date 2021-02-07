@@ -40,40 +40,51 @@ function onload() {
   });
   fixSize();
 
+  window.addEventListener('resize', fixSize);
+
 }
 
 function recieveMessage(event) {
     map = JSON.parse(event.data);
-	console.log(map);
-	draw();
+	  console.log(map);
+	  draw();
 }
 
 function draw() {
   const canvas = document.getElementById("snakeCanvas");
   const context = canvas.getContext("2d");
 
-  context.fillStyle = "#000000";
+  const squareSizeX = w /  map.dimensionX;
+  const squareSizeY = h / map.dimensionY;
+
+  context.fillStyle = "#880000";
   context.fillRect(0, 0, w, h);
+
+  context.fillStyle = "#000000";
+  context.fillRect(map.zone * squareSizeX, map.zone * squareSizeY, w - map.zone * squareSizeX * 2, h - map.zone * squareSizeY * 2);
 
   if (GAME_OVER) {
     context.fillStyle = '#008800';
     context.font = "54px Arial";
-    context.fillText("We have a winner", w/2 - 200, h/2 - 100);
-    context.fillText("Refresh to play again", w/2 - 200, h/2);
+    context.textAlign = "center";
+    context.fillText("We have a winner", w/2, h/2 - 100);
+    context.fillText("Refresh to play again", w/2, h/2);
   }
 
-  const squareSizeX = w /  map.dimensionX;
-  const squareSizeY = h / map.dimensionY;
-
-  context.fillStyle = "#FFFFFF";
+  context.fillStyle = map.self.colour;
 
   for (let clientPositions of map.self.positions) {
 	  context.fillRect(clientPositions.x * squareSizeX, clientPositions.y * squareSizeY, squareSizeX, squareSizeY);
   }
 
-  context.fillStyle = "#FF0000";
+  context.fillStyle = "#FFFFFF";
+  try {
+    context.fillRect(map.self.positions[map.self.positions.length - 1].x * squareSizeX, map.self.positions[map.self.positions.length - 1].y * squareSizeY, squareSizeX, squareSizeY)
+  } catch (error) {};
+
   for (let player of map.players) {
 
+    context.fillStyle = player.colour;
 	  for (let playerPositions of player.positions) {
 
 		  context.fillRect(playerPositions.x * squareSizeX, playerPositions.y * squareSizeY, squareSizeX, squareSizeY);
@@ -81,11 +92,16 @@ function draw() {
 	  }
 
   }
-  
+
   if (map.timeToStart > 0) {
     context.fillStyle = '#008800';
     context.font = "54px Arial";
-    context.fillText(map.timeToStart, w/2, h/2);
+    context.fillText(map.timeToStart, w/2, h/2 + 100);
+
+    context.textAlign = "center";
+    context.fillText("You are the snake with the white head", w/2, h/4);
+    context.fillText("Don't hit other players, or the edge", w/2, h/4 + 100);
+    context.fillText("Last to survive wins", w/2, h/4 + 200);
   }
 
   window.requestAnimationFrame(draw);
